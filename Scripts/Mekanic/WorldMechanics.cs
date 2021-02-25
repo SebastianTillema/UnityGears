@@ -4,8 +4,25 @@ using UnityEngine;
 
 public class WorldMechanics : MonoBehaviour
 {
+
+    public static WorldMechanics Instance {get; private set; }
+
+
+
     public List<Gear> gears;
     public Gear source;
+
+    private void Awake() {
+        if (Instance == null) 
+        {
+            Instance = this; 
+        }
+        else 
+        {
+            Destroy(gameObject);
+        }
+    }
+
 
     void Start()
     {

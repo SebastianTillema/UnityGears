@@ -9,15 +9,11 @@ public abstract class Gear : MonoBehaviour
     public int angularVelocity = 0;
     public Gear source; // infinitSource (in)dirctly rotating this gear 
     public List<Gear> links = new List<Gear>();
-    public GameObject mechanics;
-    public WorldMechanics worldMechanics;
+    private WorldMechanics worldMechanics;
     public float currentRotation;
     void Start()
     {
-        if (worldMechanics == null)
-        {
-            this.worldMechanics = (WorldMechanics)mechanics.GetComponent(typeof(WorldMechanics));
-        }
+        this.worldMechanics = WorldMechanics.Instance;
         this.currentRotation = 0.0f;
     }
     void Update()
@@ -31,10 +27,11 @@ public abstract class Gear : MonoBehaviour
     }
 
     void OnTriggerEnter(Collider other)
-    {   
-        Debug.Log("collition " + name + " and " + other.name);
+    {
+        if (worldMechanics == null) return;
+        // Debug.Log("collition " + name + " and " + other.name);
         Gear otherGear = other.gameObject.GetComponent<Gear>();
-        if (otherGear == null) other.gameObject.transform.parent.gameObject.GetComponent<Gear>();
+        if (otherGear == null) otherGear = other.gameObject.transform.parent.gameObject.GetComponent<Gear>();
         if (otherGear != null) handleGearCollision(otherGear);
     }
 
@@ -48,6 +45,7 @@ public abstract class Gear : MonoBehaviour
 
     private void handleGearCollision(Gear otherGear)
     {
+        Debug.Log("Handle " + name + ", " + otherGear.name);
         this.links.Add(otherGear);
         if (otherGear.links.Contains(this))
         {
@@ -68,6 +66,7 @@ public abstract class Gear : MonoBehaviour
         // require rotation offset
         float anglePerCog = 360f / 8f;
         float soruceRelativeRotation = source.currentRotation;
+        Debug.Log(name);
         float otherSourceRelativeRotation = otherSource.source.currentRotation;
         float offset = Mathf.Abs(soruceRelativeRotation + otherSourceRelativeRotation) % anglePerCog;
         if (offset != anglePerCog / 2)
@@ -78,5 +77,50 @@ public abstract class Gear : MonoBehaviour
         return false;
     }
 
-    public abstract void setSourceGear(Gear gear);
+    public void setSourceGear(Gear other)
+    {
+        switch (other.tag)
+        {
+            case "gear8":
+                setSourceGear8(other);
+                return;
+            case "gear16":
+                setSourceGear16(other);
+                return;
+            case "shaft":
+                setSourceShaft(other);
+                return;
+            default:
+                return;
+        }
+    }
+
+    public abstract void setSourceGear8(Gear other);
+    public abstract void setSourceGear16(Gear other);
+    public void setSourceShaft(Gear shaft)
+    {
+        setRotation(shaft.currentRotation);
+        int direction = getRotiationDirection(shaft, false);
+        this.angularVelocity = direction * shaft.angularVelocity;
+        this.source = shaft;
+    }
+
+
+    public int getRotiationDirection(Gear othergear, bool invert)
+    {
+        // check if gears have same normal
+        bool sameDirection = !invert;
+        if ((transform.up + othergear.transform.up) == Vector3.zero)
+        {
+            sameDirection = !sameDirection;
+        }
+
+        return sameDirection ? 1 : -1;
+    }
+    protected void setRotation(float rotation)
+    {
+        float rotateAngle = rotation - currentRotation;
+        this.transform.Rotate(Vector3.up * rotateAngle);
+        this.currentRotation += rotateAngle;
+    }
 }
