@@ -30,18 +30,29 @@ public class Construct : MonoBehaviour, IPointerDownHandler
         if (Physics.Raycast(ray, out hit))
         {
             GameObject hitobj = hit.transform.gameObject;
-            hit.normal = hitobj.transform.up; // object normal = up, assumtion 
-
             int activeItem = itemBar.GetComponent<ItemBar>().activeItem;
+            
             if (activeItem >= mechanicObjects.Count)
             {
                 Destroy(hitobj);
                 return;
             }
 
-            Vector3 pos = getGridPosition(hit);
-            Quaternion rotation = getGridRotation(hit);
+            GameObject placeObj = mechanicObjects[activeItem];
+            hit.normal = hitobj.transform.up; // object normal = up, assumtion 
 
+            Vector3 pos = getGridPosition(hit, hitobj, placeObj);
+            Quaternion rotation = getGridRotation(hit);
+            
+            int mask = 1<<placeObj.layer;
+            Collider[] colliders = Physics.OverlapSphere(pos, 0.5f, mask);
+            if (colliders.Length != 0) {
+                foreach (Collider col in colliders)
+                {
+                    Debug.Log("col with " + col.name);
+                }
+                return;
+            }
             GameObject gear = Instantiate(mechanicObjects[activeItem], pos, rotation);
             gear.transform.SetParent(worldMechanics.gameObject.transform, true);
             gear.name = "" + id;
@@ -51,25 +62,25 @@ public class Construct : MonoBehaviour, IPointerDownHandler
         }
     }
 
-    private Vector3 getGridPosition(RaycastHit hit)
+    private Vector3 getGridPosition(RaycastHit hit, GameObject hitObj, GameObject placeObj)
     {
-        if (hit.transform.gameObject.tag == "surface")
+        Vector3 normal = hit.normal;
+        if (hitObj.tag == "shaft" && placeObj.tag == "shaft")
+        {
+            Vector3 pos = hitObj.transform.position;
+            pos += 5 * normal;
+            return pos;
+        }
+        else //if (hitObj.tag == "surface" || true)
         {
             Vector3 hitPos = worldMechanics.gameObject.transform.InverseTransformPoint(hit.point);
             Vector3 pos = hitPos;
-            pos -= 5 * hit.normal;
+            pos -= 5 * normal;
             pos = new Vector3(Mathf.Round(pos.x / 10) * 10, Mathf.Round(pos.y / 10) * 10, Mathf.Round(pos.z / 10) * 10);
-            pos += 5 * hit.normal;
-            pos = updateInsetInGrid(hit.normal, hitPos, pos);
+            pos += 5 * normal;
+            pos = updateInsetInGrid(normal, hitPos, pos);
             return pos;
         }
-        else if (hit.transform.gameObject.tag == "shaft")
-        {
-            Vector3 pos = hit.transform.gameObject.transform.position;
-            pos += 5 * hit.normal;
-            return pos;
-        }
-        return hit.point;
     }
 
     private Vector3 updateInsetInGrid(Vector3 normal, Vector3 hitPos, Vector3 pos)
@@ -85,7 +96,7 @@ public class Construct : MonoBehaviour, IPointerDownHandler
     }
 
     public Quaternion getGridRotation(RaycastHit hit)
-    {   
+    {
         Vector3 normal = hit.normal; //new Vector3(Mathf.Abs(hit.normal.x), Mathf.Abs(hit.normal.y), Mathf.Abs(hit.normal.z));
         Quaternion rotation = Quaternion.identity;
 

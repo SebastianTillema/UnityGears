@@ -25,5 +25,10 @@ public class ItemBar : MonoBehaviour
     private void OnClick(int index)
     {   
         this.activeItem = index;
+        foreach (Button btn in buttons)
+        {
+            btn.GetComponent<Image>().color = Color.white;
+        }
+        buttons[index].GetComponent<Image>().color = Color.gray;
     }
 }

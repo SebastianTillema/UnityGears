@@ -45,7 +45,7 @@ public abstract class Gear : MonoBehaviour
 
     private void handleGearCollision(Gear otherGear)
     {
-        Debug.Log("Handle " + name + ", " + otherGear.name);
+        // Debug.Log("Handle " + name + ", " + otherGear.name);
         this.links.Add(otherGear);
         if (otherGear.links.Contains(this))
         {
@@ -108,13 +108,15 @@ public abstract class Gear : MonoBehaviour
 
     public int getRotiationDirection(Gear othergear, bool invert)
     {
-        // check if gears have same normal
         bool sameDirection = !invert;
-        if ((transform.up + othergear.transform.up) == Vector3.zero)
+        
+        float vsum1 = transform.up.x + transform.up.y + transform.up.z;
+        float vsum2 = othergear.transform.up.x + othergear.transform.up.y + othergear.transform.up.z;
+        if (Mathf.Sign(vsum1) != Mathf.Sign(vsum2))
         {
+            // gears has oppiside directions
             sameDirection = !sameDirection;
         }
-
         return sameDirection ? 1 : -1;
     }
     protected void setRotation(float rotation)
